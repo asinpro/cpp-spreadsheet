@@ -26,8 +26,11 @@ public:
     void Print(std::ostream& out) const;
     void PrintFormula(std::ostream& out) const;
 
+    std::vector<Position> GetReferencedCells() const;
+
 private:
     std::unique_ptr<ASTImpl::Expr> root_expr_;
+    std::forward_list<Position> cells_;
 };
 
 FormulaAST ParseFormulaAST(std::istream& in);

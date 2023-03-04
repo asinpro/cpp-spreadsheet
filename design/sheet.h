@@ -3,10 +3,16 @@
 #include "cell.h"
 #include "common.h"
 
+#include <algorithm>
 #include <functional>
+#include <vector>
 
 class Sheet : public SheetInterface {
 public:
+    using Row = std::vector<std::unique_ptr<Cell>>;
+    using Table = std::vector<Row>;
+
+    Sheet();
     ~Sheet();
 
     void SetCell(Position pos, std::string text) override;
@@ -21,14 +27,32 @@ public:
     void PrintValues(std::ostream& output) const override;
     void PrintTexts(std::ostream& output) const override;
 
-    const Cell* GetConcreteCell(Position pos) const;
-    Cell* GetConcreteCell(Position pos);
-
 private:
-    void MaybeIncreaseSizeToIncludePosition(Position pos);
-    void PrintCells(std::ostream& output,
-                    const std::function<void(const CellInterface&)>& printCell) const;
-    Size GetActualSize() const;
+    template<typename Function>
+    void PrintCells(std::ostream& output, Function getCellValue) const;
 
-    std::vector<std::vector<std::unique_ptr<Cell>>> cells_;
+    Table table_;
 };
+
+template<typename Function>
+void Sheet::PrintCells(std::ostream& output, Function getCellValue) const {
+    auto size = GetPrintableSize();
+
+    for (int row = 0; row < size.rows; ++row) {
+        bool is_first = true;
+
+        for (int col = 0; col < size.cols; ++col) {
+            if (!is_first) {
+                output << '\t';
+            }
+            is_first = false;
+
+            if (col < static_cast<int>(table_[row].size())) {
+                if (const auto& cell = table_[row][col]) {
+                    output << getCellValue(*cell);
+                }
+            }
+        }
+        output << '\n';
+    }
+}
